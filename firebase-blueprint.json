@@ -1,0 +1,24 @@
+{
+  "entities": {
+    "Feedback": {
+      "title": "User Feedback",
+      "description": "Collection of user-submitted feedback, ratings, and suggestions.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who submitted feedback." },
+        "userEmail": { "type": "string", "description": "The email of the user." },
+        "rating": { "type": "number", "description": "Rating from 1 to 5." },
+        "category": { "type": "string", "enum": ["Bug", "Feature Request", "Praise", "Other"] },
+        "comment": { "type": "string", "description": "Detailed feedback comment." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation." }
+      },
+      "required": ["userId", "rating", "category", "comment", "createdAt"]
+    }
+  },
+  "firestore": {
+    "feedbacks/{feedbackId}": {
+      "schema": "Feedback",
+      "description": "User feedback documents."
+    }
+  }
+}

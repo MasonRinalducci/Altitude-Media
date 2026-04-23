@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(data) {
+      return isSignedIn() && data.userId == request.auth.uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+             request.auth.token.email == 'Mason.Rinalducci@gmail.com' && 
+             request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // Feedback Validation
+    function isValidFeedback(data) {
+      return data.keys().hasAll(['userId', 'userEmail', 'rating', 'category', 'comment', 'createdAt']) &&
+             data.keys().size() == 6 &&
+             data.userId == request.auth.uid &&
+             data.userEmail == request.auth.token.email &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.category in ['Bug', 'Feature Request', 'Praise', 'Other'] &&
+             data.comment is string && data.comment.size() > 0 && data.comment.size() <= 2000 &&
+             data.createdAt == request.time;
+    }
+
+    match /feedbacks/{feedbackId} {
+      allow create: if isSignedIn() && isValidFeedback(incoming());
+      allow list, get: if isAdmin() || isOwner(resource.data);
+      allow delete: if isAdmin();
+      // No updates allowed to feedback once submitted for integrity
+    }
+  }
+}
